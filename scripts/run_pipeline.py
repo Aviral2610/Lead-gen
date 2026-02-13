@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Main pipeline orchestrator — runs the full lead generation pipeline
-end-to-end: scrape → enrich → personalize → push to outreach.
+end-to-end: scrape -> enrich -> suppress -> personalize -> push to outreach.
 
 This is the standalone Python alternative to running the n8n workflows.
 Use this for testing, one-off runs, or environments without n8n.
@@ -23,6 +23,9 @@ from src.enrichment.waterfall import EmailEnricher
 from src.personalization.website_researcher import WebsiteResearcher
 from src.personalization.email_writer import EmailWriter
 from src.outreach.instantly_client import InstantlyClient
+from src.compliance.suppression import SuppressionManager
+from src.monitoring.campaign_monitor import CampaignMonitor
+from src.monitoring.cost_tracker import CostTracker
 from src.utils.config import get_config
 from src.utils.logger import setup_logger
 
@@ -38,25 +41,54 @@ def run_pipeline(
     """Execute the full lead generation pipeline."""
     config = get_config()
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    cost_tracker = CostTracker()
+
+    # Initialize suppression list
+    suppression_file = config.suppression_file or None
+    suppression = SuppressionManager(suppression_file)
+    logger.info("Suppression list loaded: %d entries.", suppression.count)
+
+    # --- Pre-flight: Campaign health check ---
+    if not dry_run and not skip_outreach:
+        try:
+            monitor = CampaignMonitor(config)
+            alerts = monitor.check_and_alert()
+            if alerts:
+                logger.warning("Campaign health alerts found. Review before proceeding.")
+                for alert in alerts:
+                    logger.warning("  %s", alert)
+                monitor.send_slack_alerts(alerts)
+        except Exception as e:
+            logger.warning("Campaign health check failed (non-blocking): %s", e)
 
     # --- Stage 1: Scraping ---
     logger.info("=== Stage 1: Scraping (%d queries) ===", len(search_queries))
     scraper = GoogleMapsScraper(config)
     leads = scraper.scrape(search_queries)
+    cost_tracker.log_call("apify_gmaps", len(search_queries))
     logger.info("Scraped %d unique leads with emails.", len(leads))
 
     if not leads:
         logger.warning("No leads found. Exiting.")
+        cost_tracker.log_summary()
         return []
+
+    # --- Stage 1b: Suppression filter ---
+    leads, suppressed = suppression.filter_leads(leads)
+    if suppressed:
+        logger.info("Filtered out %d suppressed leads.", len(suppressed))
 
     # --- Stage 2: Enrichment & Verification ---
     logger.info("=== Stage 2: Enrichment & Verification ===")
     enricher = EmailEnricher(config)
     verified_leads = enricher.process_batch(leads)
+    cost_tracker.log_call("prospeo_search", len(leads))
+    cost_tracker.log_call("prospeo_verify", len(leads))
     logger.info("%d leads verified after enrichment.", len(verified_leads))
 
     if not verified_leads:
         logger.warning("No verified leads. Exiting.")
+        cost_tracker.log_summary()
         return []
 
     # --- Stage 3: Website Research + AI Personalization ---
@@ -70,13 +102,16 @@ def run_pipeline(
             try:
                 research = researcher.research(website)
                 lead.update(research)
+                cost_tracker.log_call("firecrawl_scrape")
+                cost_tracker.log_call("openai_gpt4o")
             except Exception as e:
                 logger.warning("Research failed for %s: %s", website, e)
 
         lead = writer.personalize_lead(lead)
+        cost_tracker.log_call("claude_sonnet")
 
     personalized_count = sum(
-        1 for l in verified_leads if l.get("ai_first_line")
+        1 for lead in verified_leads if lead.get("ai_first_line")
     )
     logger.info(
         "%d/%d leads personalized.", personalized_count, len(verified_leads)
@@ -95,27 +130,36 @@ def run_pipeline(
 
     # --- Stage 4: Push to Outreach ---
     if dry_run:
-        logger.info("DRY RUN — skipping outreach push.")
+        logger.info("DRY RUN - skipping outreach push.")
+        cost_tracker.log_summary()
+        cost_tracker.save()
         return verified_leads
 
     if skip_outreach:
         logger.info("Outreach push skipped by flag.")
+        cost_tracker.log_summary()
+        cost_tracker.save()
         return verified_leads
 
     logger.info("=== Stage 4: Pushing to Instantly ===")
     instantly = InstantlyClient(config)
     try:
         instantly.add_leads_batch(verified_leads)
+        cost_tracker.log_call("instantly_add", len(verified_leads))
         logger.info("Pushed %d leads to Instantly.", len(verified_leads))
     except Exception as e:
         logger.error("Failed to push to Instantly: %s", e)
 
     # --- Summary ---
     logger.info("=== Pipeline Complete ===")
-    logger.info("  Scraped:       %d", len(leads))
+    logger.info("  Scraped:       %d", len(leads) + len(suppressed))
+    logger.info("  Suppressed:    %d", len(suppressed))
     logger.info("  Verified:      %d", len(verified_leads))
     logger.info("  Personalized:  %d", personalized_count)
     logger.info("  Output file:   %s", out_path)
+
+    cost_tracker.log_summary()
+    cost_tracker.save()
 
     return verified_leads
 

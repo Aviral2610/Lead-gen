@@ -7,6 +7,7 @@ import requests
 from src.utils.config import get_config
 from src.utils.logger import setup_logger
 from src.utils.rate_limiter import rate_limit, retry_with_backoff
+from src.utils.validators import is_valid_email, sanitize_email
 
 logger = setup_logger(__name__)
 
@@ -28,13 +29,14 @@ class EmailEnricher:
                 "X-KEY": self.cfg.prospeo_key,
             },
             json={"domain": domain},
-            timeout=15,
+            timeout=self.cfg.api_timeout_short,
         )
         resp.raise_for_status()
         data = resp.json()
         emails = data.get("response", {}).get("emails", [])
         if emails and emails[0].get("email"):
-            return emails[0]["email"]
+            found = sanitize_email(emails[0]["email"])
+            return found if found else None
         return None
 
     @rate_limit(min_interval=0.5)
@@ -44,13 +46,14 @@ class EmailEnricher:
         resp = requests.get(
             "https://api.hunter.io/v2/domain-search",
             params={"domain": domain, "api_key": self.cfg.hunter_key},
-            timeout=15,
+            timeout=self.cfg.api_timeout_short,
         )
         resp.raise_for_status()
         data = resp.json()
         emails = data.get("data", {}).get("emails", [])
         if emails and emails[0].get("value"):
-            return emails[0]["value"]
+            found = sanitize_email(emails[0]["value"])
+            return found if found else None
         return None
 
     def enrich(self, lead: dict) -> dict:
@@ -61,8 +64,8 @@ class EmailEnricher:
         email = lead.get("email", "")
         source = "scraped"
 
-        # Layer 1: Already have a valid-looking email?
-        if email and "@" in email:
+        # Layer 1: Already have a valid email?
+        if is_valid_email(email):
             lead["enrichment_source"] = source
             return lead
 
@@ -80,18 +83,24 @@ class EmailEnricher:
             if found:
                 email = found
                 source = "prospeo"
-        except Exception as e:
-            logger.warning("Prospeo lookup failed for %s: %s", domain, e)
+        except requests.exceptions.HTTPError as e:
+            status = e.response.status_code if e.response is not None else 0
+            logger.warning("Prospeo lookup failed for %s: HTTP %d", domain, status)
+        except requests.exceptions.RequestException as e:
+            logger.warning("Prospeo lookup failed for %s: %s", domain, type(e).__name__)
 
         # Layer 3: Hunter.io
-        if not email or "@" not in email:
+        if not is_valid_email(email):
             try:
                 found = self._hunter_search(domain)
                 if found:
                     email = found
                     source = "hunter"
-            except Exception as e:
-                logger.warning("Hunter lookup failed for %s: %s", domain, e)
+            except requests.exceptions.HTTPError as e:
+                status = e.response.status_code if e.response is not None else 0
+                logger.warning("Hunter lookup failed for %s: HTTP %d", domain, status)
+            except requests.exceptions.RequestException as e:
+                logger.warning("Hunter lookup failed for %s: %s", domain, type(e).__name__)
 
         lead["email"] = email
         lead["enrichment_source"] = source
@@ -104,14 +113,14 @@ class EmailEnricher:
 
         Returns True only for 'valid' results.
         """
-        if not email or "@" not in email:
+        if not is_valid_email(email):
             return False
 
         resp = requests.get(
             "https://api.prospeo.io/email-verifier",
             params={"email": email},
             headers={"X-KEY": self.cfg.prospeo_key},
-            timeout=15,
+            timeout=self.cfg.api_timeout_short,
         )
         resp.raise_for_status()
         data = resp.json()
@@ -127,7 +136,7 @@ class EmailEnricher:
         Sets 'email_verified' to True/False on the lead dict.
         """
         lead = self.enrich(lead)
-        if lead.get("email") and "@" in lead["email"]:
+        if is_valid_email(lead.get("email", "")):
             lead["email_verified"] = self.verify_email(lead["email"])
         else:
             lead["email_verified"] = False

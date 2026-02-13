@@ -41,7 +41,7 @@ class ReplyClassifier:
     def classify(self, reply_text: str) -> str:
         """Classify a reply into one of the predefined categories."""
         msg = self.client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=self.cfg.claude_model,
             max_tokens=100,
             messages=[
                 {
@@ -89,7 +89,7 @@ class ReplyClassifier:
         elif category == "UNSUBSCRIBE":
             action["action"] = "suppress"
 
-        logger.info("Routed reply from %s → %s", email, action["action"])
+        logger.info("Routed reply from %s -> %s", email, action["action"])
         return action
 
     def _send_slack_alert(self, email: str, reply_text: str, category: str):
@@ -108,14 +108,14 @@ class ReplyClassifier:
             requests.post(
                 self.cfg.slack_webhook_url, json=payload, timeout=10
             )
-        except Exception as e:
-            logger.warning("Slack notification failed: %s", e)
+        except requests.exceptions.RequestException as e:
+            logger.warning("Slack notification failed: %s", type(e).__name__)
 
     @rate_limit(min_interval=0.5)
     def _draft_response(self, reply_text: str) -> str:
         """Draft a response to a prospect's question for human review."""
         msg = self.client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=self.cfg.claude_model,
             max_tokens=300,
             messages=[
                 {

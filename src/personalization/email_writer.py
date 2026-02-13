@@ -46,7 +46,7 @@ class EmailWriter:
         )
 
         msg = self.client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=self.cfg.claude_model,
             max_tokens=300,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -69,11 +69,18 @@ class EmailWriter:
                 pain_point=lead.get("pain_point", ""),
             )
             lead["ai_first_line"] = first_line
-        except Exception as e:
+        except anthropic.APIStatusError as e:
             logger.error(
-                "Failed to personalize lead %s: %s",
+                "Claude API error personalizing %s: HTTP %d",
                 lead.get("business_name", "unknown"),
-                e,
+                e.status_code,
+            )
+            lead["ai_first_line"] = ""
+        except anthropic.APIConnectionError as e:
+            logger.error(
+                "Claude connection error personalizing %s: %s",
+                lead.get("business_name", "unknown"),
+                type(e).__name__,
             )
             lead["ai_first_line"] = ""
         return lead
@@ -85,7 +92,7 @@ class EmailWriter:
             results.append(self.personalize_lead(lead))
         logger.info(
             "Personalized %d/%d leads.",
-            sum(1 for l in results if l.get("ai_first_line")),
+            sum(1 for r in results if r.get("ai_first_line")),
             len(leads),
         )
         return results

@@ -8,11 +8,9 @@ import requests
 from src.utils.config import get_config
 from src.utils.logger import setup_logger
 from src.utils.rate_limiter import retry_with_backoff
+from src.utils.validators import sanitize_email, sanitize_url, sanitize_phone
 
 logger = setup_logger(__name__)
-
-ACTOR_ID = "compass~crawler-google-places"
-APIFY_BASE = "https://api.apify.com/v2"
 
 
 class GoogleMapsScraper:
@@ -24,7 +22,9 @@ class GoogleMapsScraper:
 
     def start_run(self, search_queries: list[str]) -> str:
         """Start an Apify actor run and return the run ID."""
-        url = f"{APIFY_BASE}/acts/{ACTOR_ID}/runs"
+        base = self.cfg.apify_base_url
+        actor = self.cfg.apify_actor_id
+        url = f"{base}/acts/{actor}/runs"
         payload = {
             "searchStringsArray": search_queries,
             "maxCrawledPlacesPerSearch": self.cfg.max_leads_per_search,
@@ -33,7 +33,10 @@ class GoogleMapsScraper:
             "scrapeContacts": True,
             "scrapeReviews": False,
         }
-        resp = requests.post(url, json=payload, headers=self.headers, timeout=30)
+        resp = requests.post(
+            url, json=payload, headers=self.headers,
+            timeout=self.cfg.api_timeout_long,
+        )
         resp.raise_for_status()
         run_id = resp.json()["data"]["id"]
         logger.info("Apify run started: %s", run_id)
@@ -42,10 +45,14 @@ class GoogleMapsScraper:
     def wait_for_completion(self, run_id: str, poll_interval: int = 30,
                             max_wait: int = 600) -> bool:
         """Poll until the Apify run finishes. Returns True if succeeded."""
-        url = f"{APIFY_BASE}/actor-runs/{run_id}"
+        base = self.cfg.apify_base_url
+        url = f"{base}/actor-runs/{run_id}"
         elapsed = 0
         while elapsed < max_wait:
-            resp = requests.get(url, headers=self.headers, timeout=15)
+            resp = requests.get(
+                url, headers=self.headers,
+                timeout=self.cfg.api_timeout_short,
+            )
             resp.raise_for_status()
             status = resp.json()["data"]["status"]
             if status == "SUCCEEDED":
@@ -62,25 +69,33 @@ class GoogleMapsScraper:
     @retry_with_backoff(max_retries=3)
     def fetch_results(self, run_id: str | None = None) -> list[dict]:
         """Fetch dataset items from the last (or specified) run."""
+        base = self.cfg.apify_base_url
+        actor = self.cfg.apify_actor_id
         if run_id:
-            url = f"{APIFY_BASE}/actor-runs/{run_id}/dataset/items"
+            url = f"{base}/actor-runs/{run_id}/dataset/items"
         else:
-            url = f"{APIFY_BASE}/acts/{ACTOR_ID}/runs/last/dataset/items"
-        resp = requests.get(url, headers=self.headers, timeout=30)
+            url = f"{base}/acts/{actor}/runs/last/dataset/items"
+        resp = requests.get(
+            url, headers=self.headers,
+            timeout=self.cfg.api_timeout_long,
+        )
         resp.raise_for_status()
         return resp.json()
 
     def clean_lead(self, raw: dict) -> dict:
-        """Normalize a raw Apify result into a clean lead dict."""
+        """Normalize a raw Apify result into a clean lead dict.
+
+        Applies email/URL/phone validation and sanitization.
+        """
         email = raw.get("email") or ""
         if not email and isinstance(raw.get("contactInfo"), dict):
             email = raw["contactInfo"].get("email", "")
 
         return {
-            "business_name": raw.get("title", ""),
-            "email": email,
-            "phone": raw.get("phone", ""),
-            "website": raw.get("website", ""),
+            "business_name": raw.get("title", "").strip(),
+            "email": sanitize_email(email),
+            "phone": sanitize_phone(raw.get("phone", "")),
+            "website": sanitize_url(raw.get("website", "")),
             "address": raw.get("address", ""),
             "rating": raw.get("totalScore"),
             "review_count": raw.get("reviewsCount"),
@@ -97,19 +112,20 @@ class GoogleMapsScraper:
         raw_items = self.fetch_results(run_id)
         logger.info("Fetched %d raw items from Apify.", len(raw_items))
 
-        # Clean
+        # Clean and validate
         leads = [self.clean_lead(item) for item in raw_items]
 
-        # Filter: must have email
-        leads = [l for l in leads if l["email"]]
-        logger.info("%d leads have emails.", len(leads))
+        # Filter: must have valid email
+        leads = [lead for lead in leads if lead["email"]]
+        logger.info("%d leads have valid emails.", len(leads))
 
         # Deduplicate by email
         seen = set()
         unique = []
         for lead in leads:
-            if lead["email"].lower() not in seen:
-                seen.add(lead["email"].lower())
+            key = lead["email"].lower()
+            if key not in seen:
+                seen.add(key)
                 unique.append(lead)
 
         logger.info("%d unique leads after dedup.", len(unique))
