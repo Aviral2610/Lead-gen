@@ -1,0 +1,180 @@
+{
+  "name": "03 - Campaign Push + Reply Monitoring",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 14 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 2 PM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "YOUR_SPREADSHEET_ID" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Enriched Leads" },
+        "options": {}
+      },
+      "id": "read-enriched",
+      "name": "Read Enriched Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.instantly.ai/api/v1/lead/add",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"api_key\": \"{{ $env.INSTANTLY_API_KEY }}\",\n  \"campaign_id\": \"{{ $env.INSTANTLY_CAMPAIGN_ID }}\",\n  \"skip_if_in_workspace\": true,\n  \"leads\": [{\n    \"email\": \"{{ $json.email }}\",\n    \"first_name\": \"{{ $json.first_name || '' }}\",\n    \"last_name\": \"{{ $json.last_name || '' }}\",\n    \"company_name\": \"{{ $json.business_name }}\",\n    \"personalization\": \"{{ $json.ai_first_line }}\",\n    \"website\": \"{{ $json.website }}\",\n    \"custom_variables\": {\n      \"pain_point\": \"{{ $json.pain_point || '' }}\",\n      \"industry\": \"{{ $json.category || '' }}\",\n      \"specific_detail\": \"{{ $json.specific_detail || '' }}\"\n    }\n  }]\n}",
+        "options": {}
+      },
+      "id": "push-to-instantly",
+      "name": "Push to Instantly",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "mode": "id", "value": "YOUR_SPREADSHEET_ID" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Campaign Tracker" },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "mark-sent",
+      "name": "Mark as Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "instantly-events",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Instantly Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            { "outputKey": "replied", "conditions": { "conditions": [{ "leftValue": "={{ $json.event }}", "rightValue": "email_replied", "operator": { "type": "string", "operation": "equals" } }] } },
+            { "outputKey": "bounced", "conditions": { "conditions": [{ "leftValue": "={{ $json.event }}", "rightValue": "email_bounced", "operator": { "type": "string", "operation": "equals" } }] } },
+            { "outputKey": "unsubscribed", "conditions": { "conditions": [{ "leftValue": "={{ $json.event }}", "rightValue": "lead_unsubscribed", "operator": { "type": "string", "operation": "equals" } }] } }
+          ]
+        },
+        "options": {}
+      },
+      "id": "event-router",
+      "name": "Route by Event Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 100,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Classify this email reply into exactly one category: INTERESTED, NOT_INTERESTED, MEETING_REQUEST, OUT_OF_OFFICE, UNSUBSCRIBE, QUESTION. Reply with ONLY the category.\\n\\nReply: \\\"{{ $json.reply_body }}\\\"\"\n  }]\n}",
+        "options": {}
+      },
+      "id": "classify-reply",
+      "name": "Claude Classify Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [440, 200]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            { "outputKey": "interested", "conditions": { "conditions": [{ "leftValue": "={{ $json.content[0].text.trim() }}", "rightValue": "INTERESTED", "operator": { "type": "string", "operation": "contains" } }] } },
+            { "outputKey": "meeting", "conditions": { "conditions": [{ "leftValue": "={{ $json.content[0].text.trim() }}", "rightValue": "MEETING_REQUEST", "operator": { "type": "string", "operation": "contains" } }] } },
+            { "outputKey": "not_interested", "conditions": { "conditions": [{ "leftValue": "={{ $json.content[0].text.trim() }}", "rightValue": "NOT_INTERESTED", "operator": { "type": "string", "operation": "contains" } }] } },
+            { "outputKey": "question", "conditions": { "conditions": [{ "leftValue": "={{ $json.content[0].text.trim() }}", "rightValue": "QUESTION", "operator": { "type": "string", "operation": "contains" } }] } }
+          ]
+        },
+        "options": {}
+      },
+      "id": "route-classification",
+      "name": "Route by Classification",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [660, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \":email: *INTERESTED / MEETING* reply from `{{ $json.email }}`\\n```{{ $json.reply_body }}```\"\n}",
+        "options": {}
+      },
+      "id": "slack-alert",
+      "name": "Slack Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [880, 100]
+    }
+  ],
+  "connections": {
+    "Daily 2 PM Trigger": { "main": [[{ "node": "Read Enriched Leads", "type": "main", "index": 0 }]] },
+    "Read Enriched Leads": { "main": [[{ "node": "Push to Instantly", "type": "main", "index": 0 }]] },
+    "Push to Instantly": { "main": [[{ "node": "Mark as Sent", "type": "main", "index": 0 }]] },
+    "Instantly Webhook": { "main": [[{ "node": "Route by Event Type", "type": "main", "index": 0 }]] },
+    "Route by Event Type": {
+      "main": [
+        [{ "node": "Claude Classify Reply", "type": "main", "index": 0 }],
+        [],
+        []
+      ]
+    },
+    "Claude Classify Reply": { "main": [[{ "node": "Route by Classification", "type": "main", "index": 0 }]] },
+    "Route by Classification": {
+      "main": [
+        [{ "node": "Slack Alert", "type": "main", "index": 0 }],
+        [{ "node": "Slack Alert", "type": "main", "index": 0 }],
+        [],
+        []
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "lead-gen-system"
+  },
+  "tags": [{ "name": "lead-generation" }]
+}

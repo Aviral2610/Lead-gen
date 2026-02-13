@@ -1,0 +1,61 @@
+{
+  "description": "Compliance framework for cold email outreach (CAN-SPAM, GDPR, CASL). Review with legal counsel before launching campaigns.",
+  "can_spam": {
+    "jurisdiction": "United States",
+    "consent_model": "opt-out",
+    "requirements": [
+      "Include physical mailing address in every email",
+      "Include clear opt-out mechanism (unsubscribe link)",
+      "Honor unsubscribe requests within 10 business days",
+      "No deceptive subject lines",
+      "Identify the message as an advertisement"
+    ],
+    "penalty": "Up to $53,088 per violation"
+  },
+  "gdpr": {
+    "jurisdiction": "European Union / EEA",
+    "consent_model": "opt-in (with Legitimate Interest exception for B2B)",
+    "requirements": [
+      "Document Legitimate Interest Assessment (LIA) for each campaign",
+      "Only email business addresses (never personal email)",
+      "Provide immediate opt-out capability",
+      "Include sender identity and contact details",
+      "Maintain records of processing activities",
+      "Respond to data subject access requests within 30 days"
+    ],
+    "penalty": "Up to EUR 20 million or 4% of global annual revenue"
+  },
+  "casl": {
+    "jurisdiction": "Canada",
+    "consent_model": "opt-in",
+    "requirements": [
+      "Express or implied consent required before sending",
+      "Implied consent: existing business relationship within 2 years",
+      "Include sender identity, mailing address, and unsubscribe mechanism",
+      "Honor unsubscribe within 10 business days"
+    ],
+    "penalty": "Up to $10 million CAD per violation"
+  },
+  "universal_best_practices": [
+    "Always include an unsubscribe link/mechanism in every email",
+    "Only email business addresses (never personal addresses)",
+    "Maintain a global suppression list across ALL tools and campaigns",
+    "Document your legal basis for each campaign",
+    "Honor opt-outs within 24 hours (not just the legal maximum)",
+    "Never email someone who has unsubscribed from ANY campaign",
+    "Include your physical business address",
+    "Use accurate sender name and 'From' address"
+  ],
+  "suppression_list": {
+    "description": "Global suppression list management",
+    "sources": [
+      "Manual unsubscribe requests",
+      "Instantly unsubscribe events",
+      "Bounce-backs (hard bounces)",
+      "Spam complaints",
+      "Previous campaign opt-outs"
+    ],
+    "sync_frequency": "Real-time via webhooks, daily reconciliation batch",
+    "storage": "Google Sheets 'Suppression List' tab + Instantly workspace suppression"
+  }
+}

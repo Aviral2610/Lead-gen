@@ -1,0 +1,195 @@
+{
+  "name": "02 - Enrichment + AI Personalization",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 11 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 11 AM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "YOUR_SPREADSHEET_ID" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Raw Leads" },
+        "options": {}
+      },
+      "id": "read-raw-leads",
+      "name": "Read Raw Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "batchSize": 20,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split in Batches (20)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Waterfall Email Enrichment\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const { business_name, website } = item.json;\n  let email = item.json.email;\n  let source = 'scraped';\n\n  // Layer 1: Already have email from scraping?\n  if (!email || !email.includes('@')) {\n    // Layer 2: Try Prospeo\n    try {\n      const resp = await fetch(\n        'https://api.prospeo.io/domain-search',\n        {\n          method: 'POST',\n          headers: {\n            'Content-Type': 'application/json',\n            'X-KEY': $env.PROSPEO_API_KEY\n          },\n          body: JSON.stringify({ domain: website })\n        }\n      );\n      const data = await resp.json();\n      if (data.response?.emails?.[0]?.email) {\n        email = data.response.emails[0].email;\n        source = 'prospeo';\n      }\n    } catch(e) { /* continue to next layer */ }\n  }\n\n  // Layer 3: Try Hunter.io\n  if (!email || !email.includes('@')) {\n    try {\n      const resp = await fetch(\n        `https://api.hunter.io/v2/domain-search?domain=${website}&api_key=${$env.HUNTER_API_KEY}`\n      );\n      const data = await resp.json();\n      if (data.data?.emails?.[0]?.value) {\n        email = data.data.emails[0].value;\n        source = 'hunter';\n      }\n    } catch(e) { /* no more layers */ }\n  }\n\n  results.push({\n    json: { ...item.json, email, enrichment_source: source }\n  });\n}\n\nreturn results;"
+      },
+      "id": "waterfall-enrichment",
+      "name": "Waterfall Email Enrichment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.prospeo.io/email-verifier?email={{ $json.email }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-KEY", "value": "={{ $env.PROSPEO_API_KEY }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "verify-email",
+      "name": "Verify Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "id": "valid-check",
+              "leftValue": "={{ $json.response.result }}",
+              "rightValue": "valid",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "is-valid-email",
+      "name": "Email Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v0/scrape",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.FIRECRAWL_API_KEY }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"url\": \"{{ $json.website }}\",\n  \"pageOptions\": { \"onlyMainContent\": true }\n}",
+        "options": {}
+      },
+      "id": "scrape-website",
+      "name": "Scrape Prospect Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1320, -100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.OPENAI_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Analyze this company website and extract: 1. Main product/service offered 2. One specific, non-obvious detail (recent blog post, team expansion, product launch, award, case study) 3. Primary pain point the business likely faces 4. Technology stack if visible. Respond ONLY in JSON format with keys: main_service, specific_detail, pain_point, tech_stack\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.data.markdown.substring(0, 4000) }}\"\n    }\n  ],\n  \"temperature\": 0.3\n}",
+        "options": {}
+      },
+      "id": "gpt-analysis",
+      "name": "GPT-4o Website Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1540, -100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 300,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"You are writing a cold email first line.\\n\\nProspect: {{ $json.business_name }}\\nWebsite detail: {{ $json.specific_detail }}\\nPain point: {{ $json.pain_point }}\\n\\nWrite ONLY a personalized opening line (1 sentence, under 20 words) that references the specific detail naturally. Do NOT use generic compliments. Do NOT mention AI. Sound like a real person who actually visited their website.\"\n  }]\n}",
+        "options": {}
+      },
+      "id": "claude-personalization",
+      "name": "Claude First Line",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1760, -100]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "mode": "id", "value": "YOUR_SPREADSHEET_ID" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Enriched Leads" },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "save-enriched",
+      "name": "Save to Enriched Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [1980, -100]
+    }
+  ],
+  "connections": {
+    "Daily 11 AM Trigger": { "main": [[{ "node": "Read Raw Leads", "type": "main", "index": 0 }]] },
+    "Read Raw Leads": { "main": [[{ "node": "Split in Batches (20)", "type": "main", "index": 0 }]] },
+    "Split in Batches (20)": { "main": [[{ "node": "Waterfall Email Enrichment", "type": "main", "index": 0 }]] },
+    "Waterfall Email Enrichment": { "main": [[{ "node": "Verify Email", "type": "main", "index": 0 }]] },
+    "Verify Email": { "main": [[{ "node": "Email Valid?", "type": "main", "index": 0 }]] },
+    "Email Valid?": { "main": [[{ "node": "Scrape Prospect Website", "type": "main", "index": 0 }], []] },
+    "Scrape Prospect Website": { "main": [[{ "node": "GPT-4o Website Analysis", "type": "main", "index": 0 }]] },
+    "GPT-4o Website Analysis": { "main": [[{ "node": "Claude First Line", "type": "main", "index": 0 }]] },
+    "Claude First Line": { "main": [[{ "node": "Save to Enriched Leads", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "lead-gen-system"
+  },
+  "tags": [{ "name": "lead-generation" }]
+}
