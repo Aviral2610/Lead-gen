@@ -1,0 +1,52 @@
+{
+  "description": "Ideal Customer Profile (ICP) templates for targeting. Customize search_queries, titles, and value_prop for your business.",
+  "profiles": [
+    {
+      "name": "Local Service Businesses",
+      "source": "google_maps",
+      "search_queries": [
+        "barbers in Toronto",
+        "dentists in Austin",
+        "plumbers in NYC",
+        "auto repair in Chicago",
+        "landscaping in Miami"
+      ],
+      "filters": {
+        "min_rating": 3.5,
+        "min_reviews": 10,
+        "must_have_website": true
+      },
+      "value_prop": "get more customers through online marketing",
+      "similar_company": "a dental clinic in Austin",
+      "specific_result": "a 40% increase in new patient bookings in 90 days"
+    },
+    {
+      "name": "B2B SaaS Decision Makers",
+      "source": "apollo",
+      "titles": ["CEO", "CTO", "VP Engineering", "Head of Product"],
+      "locations": ["United States"],
+      "employee_ranges": ["11,50", "51,200"],
+      "industries": ["Software", "SaaS", "Technology"],
+      "value_prop": "reduce engineering costs by 30% with our platform",
+      "similar_company": "a 50-person SaaS company",
+      "specific_result": "a 30% reduction in development costs within 6 months"
+    },
+    {
+      "name": "E-commerce Brands",
+      "source": "google_maps",
+      "search_queries": [
+        "shopify store owner",
+        "e-commerce brand",
+        "online retail store"
+      ],
+      "filters": {
+        "min_rating": 4.0,
+        "min_reviews": 50,
+        "must_have_website": true
+      },
+      "value_prop": "increase your average order value by 25%",
+      "similar_company": "a DTC skincare brand",
+      "specific_result": "a 25% increase in AOV and 15% improvement in retention"
+    }
+  ]
+}

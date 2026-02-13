@@ -1,0 +1,58 @@
+{
+  "description": "Proven 3-email cold outreach sequence templates. Use {{variables}} in Instantly campaigns.",
+  "sequences": [
+    {
+      "name": "Standard B2B Outreach",
+      "emails": [
+        {
+          "step": 1,
+          "delay_days": 0,
+          "subject": "{{first_name}}, quick question about {{company}}",
+          "body": "{{ai_personalized_first_line}}\n\nI help {{industry}} businesses like yours {{value_prop}}.\n\nWould it make sense to chat for 15 min this week?\n\n{{sender_name}}"
+        },
+        {
+          "step": 2,
+          "delay_days": 3,
+          "subject": "Re: {{first_name}}, quick question about {{company}}",
+          "body": "Just wanted to share a quick case study — we helped {{similar_company}} achieve {{specific_result}}.\n\nThought it might be relevant given {{pain_point}}.\n\nWorth a quick call?"
+        },
+        {
+          "step": 3,
+          "delay_days": 7,
+          "subject": "Re: {{first_name}}, quick question about {{company}}",
+          "body": "I know you're busy, so I'll keep this brief.\n\nIf {{value_prop}} isn't a priority right now, no worries at all. Just reply 'not now' and I'll check back later."
+        }
+      ]
+    },
+    {
+      "name": "Local Business Outreach",
+      "emails": [
+        {
+          "step": 1,
+          "delay_days": 0,
+          "subject": "{{business_name}} — noticed something on your website",
+          "body": "{{ai_personalized_first_line}}\n\nI work with {{category}} businesses in {{city}} and noticed an opportunity to help you {{value_prop}}.\n\nWould you be open to a quick 10-minute call this week to see if it's a fit?\n\n{{sender_name}}"
+        },
+        {
+          "step": 2,
+          "delay_days": 3,
+          "subject": "Re: {{business_name}} — noticed something on your website",
+          "body": "Quick follow-up — we recently helped another {{category}} business in the area {{specific_result}}.\n\nHappy to share exactly how we did it if you're interested.\n\nJust reply 'yes' and I'll send over the details."
+        },
+        {
+          "step": 3,
+          "delay_days": 7,
+          "subject": "Re: {{business_name}} — noticed something on your website",
+          "body": "Totally understand if the timing isn't right.\n\nI'll follow up in a few months — in the meantime, feel free to reach out if anything changes on your end.\n\nAll the best,\n{{sender_name}}"
+        }
+      ]
+    }
+  ],
+  "best_practices": {
+    "sending_time": "Tuesday-Thursday, 10 AM local time yields 40% higher response rates",
+    "links": "ZERO links in email #1 — add in follow-ups only",
+    "format": "Plain text only, no HTML or images",
+    "open_tracking": "DISABLED — kills deliverability",
+    "unsubscribe": "Always include in every email (required by law)"
+  }
+}

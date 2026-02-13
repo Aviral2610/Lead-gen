@@ -1,0 +1,172 @@
+{
+  "name": "01 - Daily Lead Scraping (Apify Google Maps)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 9 AM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/compass~crawler-google-places/runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.APIFY_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"searchStringsArray\": [\"barbers in Toronto\", \"dentists in Austin\"],\n  \"maxCrawledPlacesPerSearch\": 100,\n  \"language\": \"en\",\n  \"includeWebResults\": false,\n  \"scrapeContacts\": true,\n  \"scrapeReviews\": false\n}",
+        "options": {}
+      },
+      "id": "apify-start-run",
+      "name": "Start Apify Scrape",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "amount": 120,
+        "unit": "seconds"
+      },
+      "id": "wait-for-apify",
+      "name": "Wait 120s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.apify.com/v2/acts/compass~crawler-google-places/runs/last/dataset/items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.APIFY_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "apify-fetch-results",
+      "name": "Fetch Apify Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            { "name": "business_name", "stringValue": "={{ $json.title }}" },
+            { "name": "email", "stringValue": "={{ $json.email || $json.contactInfo?.email || '' }}" },
+            { "name": "phone", "stringValue": "={{ $json.phone || '' }}" },
+            { "name": "website", "stringValue": "={{ $json.website || '' }}" },
+            { "name": "address", "stringValue": "={{ $json.address || '' }}" },
+            { "name": "rating", "stringValue": "={{ $json.totalScore }}" },
+            { "name": "review_count", "stringValue": "={{ $json.reviewsCount }}" },
+            { "name": "category", "stringValue": "={{ $json.categoryName || '' }}" },
+            { "name": "city", "stringValue": "={{ $json.city || '' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "clean-data",
+      "name": "Clean & Map Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "" },
+          "conditions": [
+            {
+              "id": "email-check",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "isNotEmpty" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "filter-has-email",
+      "name": "Has Email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "fieldToCompare": "email",
+        "options": {}
+      },
+      "id": "remove-duplicates",
+      "name": "Remove Duplicates",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 1,
+      "position": [1320, -100]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "mode": "id", "value": "YOUR_SPREADSHEET_ID" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Raw Leads" },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "google-sheets-raw",
+      "name": "Save to Raw Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [1540, -100]
+    }
+  ],
+  "connections": {
+    "Daily 9 AM Trigger": { "main": [[{ "node": "Start Apify Scrape", "type": "main", "index": 0 }]] },
+    "Start Apify Scrape": { "main": [[{ "node": "Wait 120s", "type": "main", "index": 0 }]] },
+    "Wait 120s": { "main": [[{ "node": "Fetch Apify Results", "type": "main", "index": 0 }]] },
+    "Fetch Apify Results": { "main": [[{ "node": "Clean & Map Fields", "type": "main", "index": 0 }]] },
+    "Clean & Map Fields": { "main": [[{ "node": "Has Email?", "type": "main", "index": 0 }]] },
+    "Has Email?": { "main": [[{ "node": "Remove Duplicates", "type": "main", "index": 0 }], []] },
+    "Remove Duplicates": { "main": [[{ "node": "Save to Raw Leads", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "lead-gen-system"
+  },
+  "tags": [{ "name": "lead-generation" }]
+}

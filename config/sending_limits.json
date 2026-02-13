@@ -1,0 +1,42 @@
+{
+  "description": "Email sending configuration and safety limits. These settings protect your domain reputation.",
+  "per_inbox": {
+    "max_emails_per_day": 50,
+    "recommended_emails_per_day": 30,
+    "min_delay_seconds": 60,
+    "max_delay_seconds": 300,
+    "delay_mode": "random"
+  },
+  "warm_up": {
+    "enabled": true,
+    "week_1_2": {
+      "emails_per_day": "5-10",
+      "activity": "Warm-up only, no cold sends"
+    },
+    "week_3_4": {
+      "emails_per_day": "15-30",
+      "activity": "Begin cold sends at 5-10/day alongside warm-up"
+    },
+    "week_5_6": {
+      "emails_per_day": "30-50",
+      "activity": "Full cold sending, maintain warm-up"
+    },
+    "week_7_plus": {
+      "emails_per_day": 50,
+      "activity": "Steady state, never exceed 50/inbox/day"
+    }
+  },
+  "deliverability": {
+    "open_tracking": false,
+    "link_tracking": false,
+    "links_in_first_email": false,
+    "email_format": "plain_text",
+    "unsubscribe_link": true,
+    "custom_tracking_domain": true
+  },
+  "bounce_thresholds": {
+    "max_bounce_rate_percent": 2,
+    "max_spam_complaint_rate_percent": 0.1,
+    "action_on_exceed": "pause_campaign_and_alert"
+  }
+}

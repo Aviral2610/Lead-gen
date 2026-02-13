@@ -1,0 +1,80 @@
+{
+  "description": "KPI benchmarks and monitoring targets for AI cold email outreach (2025-2026 industry data).",
+  "benchmarks": {
+    "open_rate": {
+      "average": 0.42,
+      "good": 0.55,
+      "excellent": 0.65,
+      "unit": "percentage"
+    },
+    "reply_rate": {
+      "average": 0.055,
+      "good": 0.10,
+      "excellent": 0.15,
+      "unit": "percentage"
+    },
+    "meeting_book_rate": {
+      "average": 0.015,
+      "good": 0.04,
+      "excellent": 0.07,
+      "unit": "percentage"
+    },
+    "bounce_rate": {
+      "max_acceptable": 0.03,
+      "good": 0.02,
+      "excellent": 0.01,
+      "unit": "percentage",
+      "alert_threshold": 0.02
+    },
+    "spam_complaint_rate": {
+      "max_acceptable": 0.003,
+      "good": 0.001,
+      "excellent": 0.0005,
+      "unit": "percentage",
+      "alert_threshold": 0.001
+    },
+    "unsubscribe_rate": {
+      "max_acceptable": 0.02,
+      "good": 0.01,
+      "excellent": 0.005,
+      "unit": "percentage"
+    }
+  },
+  "cost_metrics": {
+    "cost_per_lead": {
+      "budget_stack": "$0.10-0.50",
+      "growth_stack": "$0.50-2.00"
+    },
+    "cost_per_meeting": {
+      "budget_stack_target": "$15-30",
+      "growth_stack_target": "$30-75",
+      "excellent_threshold": "$50"
+    }
+  },
+  "weekly_monitoring_checklist": [
+    "Leads scraped this week vs. target",
+    "Email enrichment success rate",
+    "AI personalization coverage (% with custom first lines)",
+    "Emails sent, opened, replied, bounced",
+    "Meetings booked and pipeline value generated",
+    "Cost per lead and cost per meeting",
+    "Domain reputation scores (Google Postmaster Tools)"
+  ],
+  "alert_triggers": [
+    {
+      "metric": "bounce_rate",
+      "condition": "exceeds 2%",
+      "action": "Pause campaign immediately, clean email list"
+    },
+    {
+      "metric": "spam_complaint_rate",
+      "condition": "exceeds 0.1%",
+      "action": "Pause campaign, review email copy and targeting"
+    },
+    {
+      "metric": "reply_rate",
+      "condition": "below 3% after 500+ sends",
+      "action": "Review ICP targeting, A/B test new templates"
+    }
+  ]
+}
