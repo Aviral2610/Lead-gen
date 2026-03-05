@@ -79,8 +79,9 @@ def process_csv(csv_path: str, output_path: str | None = None):
     logger.info("Classification summary: %s", json.dumps(categories))
 
     if output_path:
-        with open(output_path, "w") as f:
-            json.dump(results, f, indent=2)
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=2, ensure_ascii=False)
         logger.info("Results written to %s", output_path)
 
     return results

@@ -41,13 +41,26 @@ class GoogleMapsScraper:
 
     def wait_for_completion(self, run_id: str, poll_interval: int = 30,
                             max_wait: int = 600) -> bool:
-        """Poll until the Apify run finishes. Returns True if succeeded."""
+        """Poll until the Apify run finishes. Returns True if succeeded.
+
+        Transient network errors during polling are logged and skipped so a
+        brief connectivity blip doesn't abort a long-running scrape job.
+        """
         url = f"{APIFY_BASE}/actor-runs/{run_id}"
         elapsed = 0
         while elapsed < max_wait:
-            resp = requests.get(url, headers=self.headers, timeout=15)
-            resp.raise_for_status()
-            status = resp.json()["data"]["status"]
+            try:
+                resp = requests.get(url, headers=self.headers, timeout=15)
+                resp.raise_for_status()
+                status = resp.json()["data"]["status"]
+            except Exception as e:
+                logger.warning(
+                    "Poll request failed for run %s (will retry): %s", run_id, e
+                )
+                time.sleep(poll_interval)
+                elapsed += poll_interval
+                continue
+
             if status == "SUCCEEDED":
                 logger.info("Apify run %s completed successfully.", run_id)
                 return True

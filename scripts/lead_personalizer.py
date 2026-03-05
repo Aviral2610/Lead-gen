@@ -11,7 +11,6 @@ Cost: ~$2-5 per 1,000 leads using Claude Sonnet.
 import argparse
 import csv
 import sys
-import time
 from pathlib import Path
 
 # Add project root to path
@@ -25,7 +24,7 @@ Path("logs").mkdir(exist_ok=True)
 logger = setup_logger("lead_personalizer", log_file="logs/personalizer.log")
 
 
-def process_csv(input_path: str, output_path: str, delay: float = 1.0):
+def process_csv(input_path: str, output_path: str):
     """Read enriched leads from CSV, personalize, and write output."""
     config = get_config()
     writer = EmailWriter(config)
@@ -80,9 +79,8 @@ def process_csv(input_path: str, output_path: str, delay: float = 1.0):
             logger.info("Progress: %d/%d leads processed (%d successful).",
                          i, len(leads), success)
 
-        time.sleep(delay)
-
     # Write output
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         dict_writer = csv.DictWriter(f, fieldnames=output_fields,
                                       extrasaction="ignore")
@@ -106,12 +104,8 @@ def main():
         "--output", "-o", default="personalized_leads.csv",
         help="Path to output CSV (default: personalized_leads.csv)",
     )
-    parser.add_argument(
-        "--delay", "-d", type=float, default=1.0,
-        help="Delay between API calls in seconds (default: 1.0)",
-    )
     args = parser.parse_args()
-    process_csv(args.input, args.output, args.delay)
+    process_csv(args.input, args.output)
 
 
 if __name__ == "__main__":

@@ -6,8 +6,16 @@ from pathlib import Path
 
 
 def setup_logger(name: str, log_file: str | None = None) -> logging.Logger:
-    """Create a logger with console and optional file output."""
+    """Create a logger with console and optional file output.
+
+    Idempotent: calling with the same name twice does not add duplicate handlers.
+    """
     logger = logging.getLogger(name)
+
+    # Already configured — return as-is to avoid duplicate handlers
+    if logger.handlers:
+        return logger
+
     logger.setLevel(logging.INFO)
 
     formatter = logging.Formatter(
