@@ -106,7 +106,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 100,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Classify this email reply into exactly one category: INTERESTED, NOT_INTERESTED, MEETING_REQUEST, OUT_OF_OFFICE, UNSUBSCRIBE, QUESTION. Reply with ONLY the category.\\n\\nReply: \\\"{{ $json.reply_body }}\\\"\"\n  }]\n}",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-6\",\n  \"max_tokens\": 100,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Classify this email reply into exactly one category: INTERESTED, NOT_INTERESTED, MEETING_REQUEST, OUT_OF_OFFICE, UNSUBSCRIBE, QUESTION. Reply with ONLY the category.\\n\\nReply: \\\"{{ $json.reply_body }}\\\"\"\n  }]\n}",
         "options": {}
       },
       "id": "classify-reply",

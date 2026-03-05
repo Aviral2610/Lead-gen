@@ -41,7 +41,7 @@ class ReplyClassifier:
     def classify(self, reply_text: str) -> str:
         """Classify a reply into one of the predefined categories."""
         msg = self.client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=100,
             messages=[
                 {
@@ -115,7 +115,7 @@ class ReplyClassifier:
     def _draft_response(self, reply_text: str) -> str:
         """Draft a response to a prospect's question for human review."""
         msg = self.client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=300,
             messages=[
                 {

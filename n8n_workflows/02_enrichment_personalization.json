@@ -148,7 +148,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 300,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"You are writing a cold email first line.\\n\\nProspect: {{ $json.business_name }}\\nWebsite detail: {{ $json.specific_detail }}\\nPain point: {{ $json.pain_point }}\\n\\nWrite ONLY a personalized opening line (1 sentence, under 20 words) that references the specific detail naturally. Do NOT use generic compliments. Do NOT mention AI. Sound like a real person who actually visited their website.\"\n  }]\n}",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-6\",\n  \"max_tokens\": 300,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"You are writing a cold email first line.\\n\\nProspect: {{ $json.business_name }}\\nWebsite detail: {{ $json.specific_detail }}\\nPain point: {{ $json.pain_point }}\\n\\nWrite ONLY a personalized opening line (1 sentence, under 20 words) that references the specific detail naturally. Do NOT use generic compliments. Do NOT mention AI. Sound like a real person who actually visited their website.\"\n  }]\n}",
         "options": {}
       },
       "id": "claude-personalization",
