@@ -71,3 +71,54 @@ class ApolloScraper:
             "category": org.get("industry", ""),
             "employee_count": org.get("estimated_num_employees"),
         }
+
+    def scrape(
+        self,
+        titles: list[str],
+        locations: list[str] | None = None,
+        employee_ranges: list[str] | None = None,
+        industry_ids: list[str] | None = None,
+        max_pages: int = 5,
+        per_page: int = 25,
+    ) -> list[dict]:
+        """Paginate through Apollo results, clean, filter, and deduplicate.
+
+        Fetches up to max_pages pages and stops early if a page returns
+        fewer results than per_page (i.e. the last page).
+        Returns only leads that have a valid email address.
+        """
+        all_leads: list[dict] = []
+
+        for page in range(1, max_pages + 1):
+            page_leads = self.search_people(
+                titles=titles,
+                locations=locations,
+                employee_ranges=employee_ranges,
+                industry_ids=industry_ids,
+                page=page,
+                per_page=per_page,
+            )
+            all_leads.extend(page_leads)
+
+            # Stop early if this was the last page
+            if len(page_leads) < per_page:
+                logger.info("Reached last Apollo page at page %d.", page)
+                break
+
+        logger.info("Fetched %d total Apollo leads across pages.", len(all_leads))
+
+        # Filter: must have a valid email
+        with_email = [l for l in all_leads if l.get("email") and "@" in l["email"]]
+        logger.info("%d leads have emails.", len(with_email))
+
+        # Deduplicate by email (case-insensitive)
+        seen: set[str] = set()
+        unique: list[dict] = []
+        for lead in with_email:
+            key = lead["email"].lower()
+            if key not in seen:
+                seen.add(key)
+                unique.append(lead)
+
+        logger.info("%d unique leads after dedup.", len(unique))
+        return unique

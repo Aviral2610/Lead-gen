@@ -72,9 +72,17 @@ def run_pipeline(
                 research = researcher.research(website)
                 lead.update(research)
             except Exception as e:
-                logger.warning("Research failed for %s: %s", website, e)
+                logger.warning(
+                    "Website research failed for %s (%s): %s",
+                    lead.get("business_name", "unknown"), website, e,
+                )
+        else:
+            logger.info(
+                "No website for '%s'; personalization will use minimal context.",
+                lead.get("business_name", "unknown"),
+            )
 
-        lead = writer.personalize_lead(lead)
+        writer.personalize_lead(lead)
 
     personalized_count = sum(
         1 for l in verified_leads if l.get("ai_first_line")
@@ -88,7 +96,8 @@ def run_pipeline(
         out_path = output_file
     else:
         out_path = f"output/pipeline_results_{timestamp}.json"
-        Path("output").mkdir(exist_ok=True)
+
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
 
     with open(out_path, "w") as f:
         json.dump(verified_leads, f, indent=2, default=str)
