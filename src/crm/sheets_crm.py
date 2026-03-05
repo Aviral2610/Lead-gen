@@ -146,8 +146,10 @@ class SheetsCRM:
 
         target_row = None
         for i, row in enumerate(rows):
+            if i == 0:
+                continue  # skip header row
             if row and row[0].lower() == email.lower():
-                target_row = i + 1  # 1-indexed
+                target_row = i + 1  # 1-indexed (row 1 in Sheets = index 0)
                 break
 
         if target_row is None:

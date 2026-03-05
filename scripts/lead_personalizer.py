@@ -21,6 +21,7 @@ from src.personalization.email_writer import EmailWriter
 from src.utils.config import get_config
 from src.utils.logger import setup_logger
 
+Path("logs").mkdir(exist_ok=True)
 logger = setup_logger("lead_personalizer", log_file="logs/personalizer.log")
 
 
@@ -34,7 +35,29 @@ def process_csv(input_path: str, output_path: str, delay: float = 1.0):
         input_fields = reader.fieldnames or []
         leads = list(reader)
 
+    if not input_fields:
+        logger.error("Input CSV '%s' has no headers or is empty.", input_path)
+        raise SystemExit(1)
+
     logger.info("Loaded %d leads from %s", len(leads), input_path)
+
+    # Deduplicate by email (case-insensitive), keeping first occurrence
+    seen_emails: set[str] = set()
+    deduped: list[dict] = []
+    for lead in leads:
+        email = lead.get("email", "").strip().lower()
+        if email and email in seen_emails:
+            logger.info("Skipping duplicate email: %s", email)
+            continue
+        if email:
+            seen_emails.add(email)
+        deduped.append(lead)
+    if len(deduped) < len(leads):
+        logger.info(
+            "Removed %d duplicate email(s). Processing %d unique leads.",
+            len(leads) - len(deduped), len(deduped),
+        )
+    leads = deduped
 
     output_fields = list(input_fields)
     if "ai_first_line" not in output_fields:

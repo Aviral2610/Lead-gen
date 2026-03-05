@@ -26,6 +26,7 @@ from src.outreach.instantly_client import InstantlyClient
 from src.utils.config import get_config
 from src.utils.logger import setup_logger
 
+Path("logs").mkdir(exist_ok=True)
 logger = setup_logger("pipeline", log_file="logs/pipeline.log")
 
 

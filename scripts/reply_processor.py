@@ -20,6 +20,7 @@ from src.reply_handling.classifier import ReplyClassifier
 from src.utils.config import get_config
 from src.utils.logger import setup_logger
 
+Path("logs").mkdir(exist_ok=True)
 logger = setup_logger("reply_processor", log_file="logs/replies.log")
 
 
@@ -29,6 +30,7 @@ def process_single(email: str, reply_text: str):
     classifier = ReplyClassifier(config)
     result = classifier.process_reply(email, reply_text)
     logger.info("Result: %s", json.dumps(result, indent=2))
+    print(json.dumps(result, indent=2))
     return result
 
 
@@ -39,18 +41,34 @@ def process_csv(csv_path: str, output_path: str | None = None):
 
     with open(csv_path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames or []
         replies = list(reader)
+
+    # Validate that required columns exist
+    missing = [col for col in ("email", "reply_body") if col not in fieldnames]
+    if missing:
+        logger.error(
+            "CSV is missing required column(s): %s. Found: %s",
+            missing, fieldnames,
+        )
+        raise SystemExit(1)
 
     logger.info("Processing %d replies from %s", len(replies), csv_path)
 
     results = []
-    for reply in replies:
-        email = reply.get("email", "")
-        body = reply.get("reply_body", "")
+    skipped = 0
+    for i, reply in enumerate(replies, 1):
+        email = reply.get("email", "").strip()
+        body = reply.get("reply_body", "").strip()
         if not email or not body:
+            logger.warning("Row %d skipped — missing email or reply_body.", i)
+            skipped += 1
             continue
         result = classifier.process_reply(email, body)
         results.append(result)
+
+    if skipped:
+        logger.info("Skipped %d row(s) with missing data.", skipped)
 
     # Summary
     categories = {}

@@ -3,6 +3,7 @@ stopping when a valid email is found. Achieves 85-95% email validity
 versus ~40% from a single provider."""
 
 import requests
+from urllib.parse import urlparse
 
 from src.utils.config import get_config
 from src.utils.logger import setup_logger
@@ -71,8 +72,13 @@ class EmailEnricher:
             lead["enrichment_source"] = "none"
             return lead
 
-        # Extract domain from URL
-        domain = website.replace("https://", "").replace("http://", "").split("/")[0]
+        # Extract domain from URL (handles ports, query strings, trailing slashes)
+        parsed = urlparse(website if "://" in website else f"https://{website}")
+        domain = parsed.hostname or ""
+        if not domain or "." not in domain:
+            logger.warning("Could not extract valid domain from website: %s", website)
+            lead["enrichment_source"] = "none"
+            return lead
 
         # Layer 2: Prospeo
         try:
@@ -93,6 +99,12 @@ class EmailEnricher:
             except Exception as e:
                 logger.warning("Hunter lookup failed for %s: %s", domain, e)
 
+        if not email or "@" not in email:
+            logger.warning(
+                "All enrichment layers failed for domain '%s' (%s).",
+                domain,
+                lead.get("business_name", "unknown"),
+            )
         lead["email"] = email
         lead["enrichment_source"] = source
         return lead
