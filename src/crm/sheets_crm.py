@@ -88,8 +88,9 @@ class SheetsCRM:
         rows = []
         now = datetime.now(timezone.utc).isoformat()
         for lead in leads:
-            lead["enriched_date"] = now
-            rows.append([str(lead.get(col, "")) for col in ENRICHED_LEADS_COLUMNS])
+            # Build row without mutating the caller's dict
+            row_lead = {**lead, "enriched_date": now}
+            rows.append([str(row_lead.get(col, "")) for col in ENRICHED_LEADS_COLUMNS])
 
         body = {"values": rows}
         self.sheets.values().append(
@@ -126,7 +127,7 @@ class SheetsCRM:
         enriched_emails = {
             row[0].lower()
             for row in enriched_result.get("values", [])[1:]
-            if row
+            if row and row[0]
         }
 
         # Build lead dicts for unenriched rows

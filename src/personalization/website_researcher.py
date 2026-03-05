@@ -81,7 +81,7 @@ class WebsiteResearcher:
                 "model": "gpt-4o",
                 "messages": [
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": website_content[:4000]},
+                    {"role": "user", "content": website_content[:8000]},
                 ],
                 "temperature": 0.3,
             },
@@ -97,7 +97,8 @@ class WebsiteResearcher:
         # Parse JSON from the response (handle markdown code blocks)
         raw = raw.strip()
         if raw.startswith("```"):
-            raw = raw.split("\n", 1)[1].rsplit("```", 1)[0]
+            parts = raw.split("\n", 1)
+            raw = parts[1].rsplit("```", 1)[0] if len(parts) > 1 else ""
 
         try:
             return json.loads(raw)

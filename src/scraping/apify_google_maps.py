@@ -35,7 +35,10 @@ class GoogleMapsScraper:
         }
         resp = requests.post(url, json=payload, headers=self.headers, timeout=30)
         resp.raise_for_status()
-        run_id = resp.json()["data"]["id"]
+        data = resp.json().get("data") or {}
+        run_id = data.get("id")
+        if not run_id:
+            raise RuntimeError(f"Apify did not return a run ID. Response: {resp.text[:200]}")
         logger.info("Apify run started: %s", run_id)
         return run_id
 
@@ -85,9 +88,9 @@ class GoogleMapsScraper:
 
     def clean_lead(self, raw: dict) -> dict:
         """Normalize a raw Apify result into a clean lead dict."""
-        email = raw.get("email") or ""
+        email = (raw.get("email") or "").strip()
         if not email and isinstance(raw.get("contactInfo"), dict):
-            email = raw["contactInfo"].get("email", "")
+            email = raw["contactInfo"].get("email", "").strip()
 
         return {
             "business_name": raw.get("title", ""),

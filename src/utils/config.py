@@ -18,7 +18,7 @@ _load_env()
 
 def _require(key: str) -> str:
     """Return env var or raise with a helpful message."""
-    val = os.getenv(key)
+    val = (os.getenv(key) or "").strip()
     if not val:
         raise EnvironmentError(
             f"Missing required environment variable: {key}. "

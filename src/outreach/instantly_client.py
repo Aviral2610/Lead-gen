@@ -66,10 +66,32 @@ class InstantlyClient:
         logger.info("Added lead %s to campaign %s.", formatted["email"], cid)
         return resp.json()
 
+    @retry_with_backoff(max_retries=3)
+    def _push_chunk(self, chunk: list[dict], cid: str) -> dict:
+        """Push a single pre-formatted chunk to Instantly. Internal helper."""
+        payload = {
+            "api_key": self.cfg.instantly_key,
+            "campaign_id": cid,
+            "skip_if_in_workspace": True,
+            "leads": chunk,
+        }
+        resp = requests.post(
+            f"{INSTANTLY_BASE}/lead/add",
+            json=payload,
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
     def add_leads_batch(
-        self, leads: list[dict], campaign_id: str | None = None
+        self, leads: list[dict], campaign_id: str | None = None,
+        chunk_size: int = 100,
     ) -> dict:
-        """Add multiple leads to an Instantly campaign in a single request."""
+        """Add multiple leads to an Instantly campaign.
+
+        Sends in chunks of chunk_size (default 100) to stay within API limits.
+        Returns the response from the last chunk.
+        """
         cid = campaign_id or self.cfg.instantly_campaign_id
         formatted = [self._format_lead(lead) for lead in leads]
         formatted = [f for f in formatted if f is not None]
@@ -78,21 +100,16 @@ class InstantlyClient:
             logger.warning("No valid leads to push to Instantly.")
             return {}
 
-        payload = {
-            "api_key": self.cfg.instantly_key,
-            "campaign_id": cid,
-            "skip_if_in_workspace": True,
-            "leads": formatted,
-        }
+        last_response: dict = {}
+        for i in range(0, len(formatted), chunk_size):
+            chunk = formatted[i: i + chunk_size]
+            last_response = self._push_chunk(chunk, cid)
+            logger.info(
+                "Pushed chunk %d-%d/%d leads to campaign %s.",
+                i + 1, i + len(chunk), len(formatted), cid,
+            )
 
-        resp = requests.post(
-            f"{INSTANTLY_BASE}/lead/add",
-            json=payload,
-            timeout=30,
-        )
-        resp.raise_for_status()
-        logger.info("Added %d leads to campaign %s.", len(formatted), cid)
-        return resp.json()
+        return last_response
 
     @retry_with_backoff(max_retries=2)
     def list_campaigns(self) -> list[dict]:
