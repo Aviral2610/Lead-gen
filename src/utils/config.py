@@ -40,6 +40,11 @@ class Config:
     openai_key: str = field(default_factory=lambda: _require("OPENAI_API_KEY"))
     anthropic_key: str = field(default_factory=lambda: _require("ANTHROPIC_API_KEY"))
 
+    # Apollo.io (optional — only required when using Apollo as lead source)
+    apollo_key: str = field(
+        default_factory=lambda: _optional("APOLLO_API_KEY")
+    )
+
     # Email Enrichment
     prospeo_key: str = field(default_factory=lambda: _require("PROSPEO_API_KEY"))
     hunter_key: str = field(default_factory=lambda: _require("HUNTER_API_KEY"))
