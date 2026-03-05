@@ -82,6 +82,7 @@ def _scrape_apollo(config, profile: dict) -> list[dict]:
             titles=profile.get("titles", []),
             locations=profile.get("locations"),
             employee_ranges=profile.get("employee_ranges"),
+            industries=profile.get("industries"),
             page=page,
         )
         leads.extend(batch)

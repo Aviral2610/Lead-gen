@@ -26,10 +26,23 @@ class ApolloScraper:
         locations: list[str] | None = None,
         employee_ranges: list[str] | None = None,
         industry_ids: list[str] | None = None,
+        industries: list[str] | None = None,
         page: int = 1,
         per_page: int = 25,
     ) -> list[dict]:
-        """Search Apollo for people matching the given criteria."""
+        """Search Apollo for people matching the given criteria.
+
+        Args:
+            titles: Job titles to filter by (e.g., ["CEO", "VP Engineering"]).
+            locations: Locations to filter by (e.g., ["United States"]).
+            employee_ranges: Employee count ranges (e.g., ["11,50", "51,200"]).
+            industry_ids: Apollo industry tag IDs (numeric). Use this for
+                precise filtering when you know the Apollo tag IDs.
+            industries: Industry names (e.g., ["Software", "SaaS"]). Passed as
+                keyword tags matched against Apollo's industry taxonomy.
+            page: Result page number.
+            per_page: Results per page (max 100).
+        """
         payload: dict = {
             "api_key": self.api_key,
             "person_titles": titles,
@@ -42,6 +55,8 @@ class ApolloScraper:
             payload["organization_num_employees_ranges"] = employee_ranges
         if industry_ids:
             payload["organization_industry_tag_ids"] = industry_ids
+        if industries:
+            payload["q_organization_keyword_tags"] = industries
 
         resp = requests.post(
             f"{APOLLO_BASE}/mixed_people/search",

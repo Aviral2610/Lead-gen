@@ -2,6 +2,7 @@
 and retrieves cleaned lead data."""
 
 import time
+from urllib.parse import urlparse
 
 import requests
 
@@ -13,6 +14,26 @@ logger = setup_logger(__name__)
 
 ACTOR_ID = "compass~crawler-google-places"
 APIFY_BASE = "https://api.apify.com/v2"
+
+
+def _normalize_website(url: str) -> str:
+    """Normalize a website URL to HTTPS with no www. prefix or trailing path.
+
+    Examples:
+        http://www.example.com/about  →  https://example.com
+        https://www.shop.co.uk/      →  https://shop.co.uk
+        example.com                  →  https://example.com
+    """
+    if not url:
+        return ""
+    url = url.strip()
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    parsed = urlparse(url)
+    host = parsed.hostname or ""
+    if host.startswith("www."):
+        host = host[4:]
+    return f"https://{host}" if host else ""
 
 
 class GoogleMapsScraper:
@@ -70,7 +91,7 @@ class GoogleMapsScraper:
         resp.raise_for_status()
         return resp.json()
 
-    def clean_lead(self, raw: dict) -> dict:
+    def _clean_lead(self, raw: dict) -> dict:
         """Normalize a raw Apify result into a clean lead dict."""
         email = raw.get("email") or ""
         if not email and isinstance(raw.get("contactInfo"), dict):
@@ -80,13 +101,34 @@ class GoogleMapsScraper:
             "business_name": raw.get("title", ""),
             "email": email,
             "phone": raw.get("phone", ""),
-            "website": raw.get("website", ""),
+            "website": _normalize_website(raw.get("website", "")),
             "address": raw.get("address", ""),
-            "rating": raw.get("totalScore"),
-            "review_count": raw.get("reviewsCount"),
+            "rating": raw.get("totalScore") or 0.0,
+            "review_count": raw.get("reviewsCount") or 0,
             "category": raw.get("categoryName", ""),
             "city": raw.get("city", ""),
         }
+
+    # Keep old name as an alias for backwards compatibility with any external callers
+    clean_lead = _clean_lead
+
+    def _deduplicate(self, leads: list[dict]) -> list[dict]:
+        """Remove leads with duplicate emails (case-insensitive).
+
+        Leads with an empty email are kept as-is (not de-duplicated against
+        each other) since the email enrichment step may recover their address.
+        """
+        seen: set[str] = set()
+        unique: list[dict] = []
+        for lead in leads:
+            email = lead.get("email", "").lower()
+            if not email:
+                unique.append(lead)
+                continue
+            if email not in seen:
+                seen.add(email)
+                unique.append(lead)
+        return unique
 
     def scrape(self, search_queries: list[str]) -> list[dict]:
         """Full pipeline: start run, wait, fetch, clean, deduplicate."""
@@ -97,20 +139,12 @@ class GoogleMapsScraper:
         raw_items = self.fetch_results(run_id)
         logger.info("Fetched %d raw items from Apify.", len(raw_items))
 
-        # Clean
-        leads = [self.clean_lead(item) for item in raw_items]
+        leads = [self._clean_lead(item) for item in raw_items]
 
         # Filter: must have email
         leads = [l for l in leads if l["email"]]
         logger.info("%d leads have emails.", len(leads))
 
-        # Deduplicate by email
-        seen = set()
-        unique = []
-        for lead in leads:
-            if lead["email"].lower() not in seen:
-                seen.add(lead["email"].lower())
-                unique.append(lead)
-
-        logger.info("%d unique leads after dedup.", len(unique))
-        return unique
+        leads = self._deduplicate(leads)
+        logger.info("%d unique leads after dedup.", len(leads))
+        return leads
