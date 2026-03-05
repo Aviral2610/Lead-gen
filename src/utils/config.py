@@ -69,12 +69,6 @@ class Config:
     max_leads_per_search: int = field(
         default_factory=lambda: int(_optional("MAX_LEADS_PER_SEARCH", "100"))
     )
-    api_rate_limit_delay: float = field(
-        default_factory=lambda: float(_optional("API_RATE_LIMIT_DELAY", "1"))
-    )
-    enrichment_batch_size: int = field(
-        default_factory=lambda: int(_optional("ENRICHMENT_BATCH_SIZE", "20"))
-    )
     max_emails_per_inbox_per_day: int = field(
         default_factory=lambda: int(_optional("MAX_EMAILS_PER_INBOX_PER_DAY", "50"))
     )
