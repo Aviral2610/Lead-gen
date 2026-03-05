@@ -28,12 +28,12 @@ class WebsiteResearcher:
             return ""
 
         resp = requests.post(
-            "https://api.firecrawl.dev/v0/scrape",
+            "https://api.firecrawl.dev/v1/scrape",
             headers={
                 "Authorization": f"Bearer {self.cfg.firecrawl_key}",
                 "Content-Type": "application/json",
             },
-            json={"url": url, "pageOptions": {"onlyMainContent": True}},
+            json={"url": url, "onlyMainContent": True},
             timeout=30,
         )
         resp.raise_for_status()
@@ -88,7 +88,11 @@ class WebsiteResearcher:
             timeout=60,
         )
         resp.raise_for_status()
-        raw = resp.json()["choices"][0]["message"]["content"]
+        choices = resp.json().get("choices", [])
+        if not choices:
+            logger.warning("OpenAI returned no choices for website analysis.")
+            return {"main_service": "", "specific_detail": "", "pain_point": "", "tech_stack": ""}
+        raw = choices[0]["message"]["content"]
 
         # Parse JSON from the response (handle markdown code blocks)
         raw = raw.strip()

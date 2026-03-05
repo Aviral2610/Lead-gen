@@ -45,6 +45,11 @@ class SheetsCRM:
     def __init__(self, credentials_file: str, config=None):
         self.cfg = config or get_config()
         self.spreadsheet_id = self.cfg.sheets_spreadsheet_id
+        if not self.spreadsheet_id:
+            raise EnvironmentError(
+                "GOOGLE_SHEETS_SPREADSHEET_ID is not configured. "
+                "Set it in your .env file."
+            )
 
         creds = service_account.Credentials.from_service_account_file(
             credentials_file, scopes=SCOPES
@@ -58,9 +63,13 @@ class SheetsCRM:
         rows = []
         now = datetime.now(timezone.utc).isoformat()
         for lead in leads:
-            lead["scraped_date"] = now
-            lead.setdefault("source", "apify_gmaps")
-            rows.append([str(lead.get(col, "")) for col in RAW_LEADS_COLUMNS])
+            # Build row without mutating the caller's dict
+            row_lead = {
+                **lead,
+                "scraped_date": now,
+                "source": lead.get("source") or "apify_gmaps",
+            }
+            rows.append([str(row_lead.get(col, "")) for col in RAW_LEADS_COLUMNS])
 
         body = {"values": rows}
         self.sheets.values().append(
