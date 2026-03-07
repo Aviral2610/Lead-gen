@@ -43,7 +43,7 @@ class TestScrapeWebsite:
 # analyze_with_gpt
 # ---------------------------------------------------------------------------
 
-EMPTY_RESULT = {"main_service": "", "specific_detail": "", "pain_point": "", "tech_stack": ""}
+EMPTY_RESULT = {"main_service": "", "specific_detail": "", "pain_point": "", "tech_stack": "", "firm_type": "other"}
 
 
 def _make_openai_response(content: str) -> MagicMock:

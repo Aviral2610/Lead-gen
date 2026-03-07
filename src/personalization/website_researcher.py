@@ -100,7 +100,7 @@ class WebsiteResearcher:
         choices = resp.json().get("choices", [])
         if not choices:
             logger.warning("OpenAI returned no choices for website analysis.")
-            return {"main_service": "", "specific_detail": "", "pain_point": "", "tech_stack": ""}
+            return {"main_service": "", "specific_detail": "", "pain_point": "", "tech_stack": "", "firm_type": "other"}
         raw = choices[0]["message"]["content"]
 
         # Parse JSON from the response (handle markdown code blocks)
