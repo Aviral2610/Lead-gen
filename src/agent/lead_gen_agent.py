@@ -246,6 +246,42 @@ REPLY CLASSIFICATION:
 - For classify_reply tasks, always report the category and recommended action.
 - For INTERESTED or MEETING_REQUEST: note that a Slack alert was sent.
 - For QUESTION: include the AI-drafted response in your summary.
+
+FINCEPT TERMINAL CAMPAIGNS:
+When the user asks to run a Fincept Terminal campaign, use these proven targeting
+segments and search queries:
+
+Segment 1 — Hedge Funds & Asset Managers (bloomberg_cost angle):
+  Queries: "hedge fund Mumbai", "hedge fund Delhi", "asset management company Mumbai",
+           "portfolio management services Mumbai", "boutique asset management Singapore",
+           "investment management firm Kuala Lumpur", "wealth management firm Dubai"
+  Add to each lead: product_context="Fincept Terminal — free Bloomberg alternative",
+                    email_angle="bloomberg_cost"
+
+Segment 2 — RIAs & Family Offices (bloomberg_cost angle, Apollo source):
+  Titles: Chief Investment Officer, Portfolio Manager, Head of Research,
+          Managing Partner, Director of Investments, Fund Manager
+  Locations: India, Singapore, United Arab Emirates
+  Industries: Investment Management, Financial Services, Hedge Fund
+  Add to each lead: product_context="Fincept Terminal — free Bloomberg alternative",
+                    email_angle="bloomberg_cost"
+
+Segment 3 — Fintech Startups (data_engineering angle, Apollo source):
+  Titles: CTO, Co-founder, Head of Product, VP Engineering, Head of Data
+  Industries: Financial Services, Computer Software, Information Technology
+  Keywords: fintech, wealthtech, trading platform, robo-advisor
+  Add to each lead: product_context="Fincept Terminal — unified financial data pipeline",
+                    email_angle="data_engineering"
+
+Segment 4 — Universities & CFA Institutes (education angle):
+  Queries: "business school Mumbai", "finance department university Delhi",
+           "MBA college Bangalore", "CFA coaching institute India"
+  Add to each lead: product_context="Fincept Terminal — free Bloomberg alternative for students",
+                    email_angle="education"
+
+IMPORTANT: When personalizing Fincept leads, always set the product_context and
+email_angle fields on each lead dict before calling personalize_leads. The
+personalization engine uses these to tailor the AI first line to the right pitch angle.
 """
 
 

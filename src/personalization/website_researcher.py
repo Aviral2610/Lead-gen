@@ -58,17 +58,26 @@ class WebsiteResearcher:
                 "specific_detail": "",
                 "pain_point": "",
                 "tech_stack": "",
+                "firm_type": "other",
             }
 
         system_prompt = (
             "Analyze this company website and extract:\n"
             "1. Main product/service offered\n"
             "2. One specific, non-obvious detail (recent blog post, team expansion, "
-            "product launch, award, case study)\n"
-            "3. Primary pain point the business likely faces\n"
-            "4. Technology stack if visible\n"
+            "product launch, award, case study, new hire, fund raise)\n"
+            "3. Primary pain point the business likely faces. "
+            "For financial firms (hedge funds, asset managers, RIAs, fintechs, "
+            "universities), focus specifically on: expensive data subscriptions "
+            "(Bloomberg/Refinitiv/FactSet), fragmented data tools, lack of AI "
+            "or quantitative analytics, or high per-seat software costs.\n"
+            "4. Technology stack if visible. For financial firms, note any "
+            "mention of Bloomberg Terminal, Refinitiv Eikon, FactSet, "
+            "Morningstar Direct, or similar financial data platforms.\n"
+            "5. Firm type — classify as one of: hedge_fund, asset_manager, "
+            "family_office, ria, fintech_startup, university, other\n"
             "Respond ONLY in JSON format with keys: "
-            "main_service, specific_detail, pain_point, tech_stack"
+            "main_service, specific_detail, pain_point, tech_stack, firm_type"
         )
 
         resp = requests.post(
@@ -109,6 +118,7 @@ class WebsiteResearcher:
                 "specific_detail": "",
                 "pain_point": "",
                 "tech_stack": "",
+                "firm_type": "other",
             }
 
     def research(self, website_url: str) -> dict:

@@ -47,6 +47,111 @@
       "value_prop": "increase your average order value by 25%",
       "similar_company": "a DTC skincare brand",
       "specific_result": "a 25% increase in AOV and 15% improvement in retention"
+    },
+
+    {
+      "name": "Fincept — Small Hedge Funds & Boutique Asset Managers",
+      "product": "fincept_terminal",
+      "email_angle": "bloomberg_cost",
+      "source": "google_maps",
+      "search_queries": [
+        "hedge fund Mumbai",
+        "hedge fund Delhi",
+        "hedge fund Bangalore",
+        "asset management company Mumbai",
+        "asset management company Delhi",
+        "portfolio management services Mumbai",
+        "portfolio management services Hyderabad",
+        "boutique asset management Singapore",
+        "boutique asset management Dubai",
+        "investment management firm Kuala Lumpur",
+        "wealth management firm Chennai",
+        "wealth management firm Pune"
+      ],
+      "filters": {
+        "min_rating": 3.0,
+        "min_reviews": 1,
+        "must_have_website": true
+      },
+      "value_prop": "replace Bloomberg Terminal at zero cost with AI-powered financial research",
+      "similar_company": "a boutique asset manager in Mumbai",
+      "specific_result": "institutional-grade market data and GenAI insights at $0 instead of $25,000/year per seat"
+    },
+
+    {
+      "name": "Fincept — Independent RIAs & Family Offices",
+      "product": "fincept_terminal",
+      "email_angle": "bloomberg_cost",
+      "source": "apollo",
+      "titles": [
+        "Chief Investment Officer",
+        "Portfolio Manager",
+        "Head of Research",
+        "Managing Partner",
+        "Director of Investments",
+        "Investment Manager",
+        "Fund Manager"
+      ],
+      "locations": ["India", "Singapore", "United Arab Emirates"],
+      "employee_ranges": ["1,10", "11,50"],
+      "industries": [
+        "Investment Management",
+        "Financial Services",
+        "Venture Capital and Private Equity",
+        "Hedge Fund"
+      ],
+      "value_prop": "replace Bloomberg Terminal at zero cost with AI-powered financial research",
+      "similar_company": "an RIA managing $50M AUM",
+      "specific_result": "the same data coverage across 150+ global markets — without the $25,000 annual Bloomberg fee"
+    },
+
+    {
+      "name": "Fincept — Fintech Startups Needing Market Data APIs",
+      "product": "fincept_terminal",
+      "email_angle": "data_engineering",
+      "source": "apollo",
+      "titles": [
+        "CTO",
+        "Co-founder",
+        "Head of Product",
+        "VP Engineering",
+        "Data Engineer",
+        "Head of Data"
+      ],
+      "locations": ["India", "Singapore", "United Arab Emirates", "United States"],
+      "employee_ranges": ["1,10", "11,50", "51,200"],
+      "industries": [
+        "Financial Services",
+        "Computer Software",
+        "Information Technology and Services"
+      ],
+      "keywords": ["fintech", "investment platform", "trading", "robo-advisor", "wealthtech"],
+      "value_prop": "replace Polygon + Quandl + DBnomics with a single terminal that has 100+ pre-built data connectors",
+      "similar_company": "a Series A wealthtech startup",
+      "specific_result": "a unified financial data pipeline across 100+ sources with a custom API mapper — in one install"
+    },
+
+    {
+      "name": "Fincept — University Finance Departments",
+      "product": "fincept_terminal",
+      "email_angle": "education",
+      "source": "google_maps",
+      "search_queries": [
+        "business school Mumbai",
+        "finance department university Delhi",
+        "MBA college Bangalore",
+        "finance institute Hyderabad",
+        "commerce college Chennai",
+        "CFA coaching institute India"
+      ],
+      "filters": {
+        "min_rating": 3.5,
+        "min_reviews": 5,
+        "must_have_website": true
+      },
+      "value_prop": "give students Bloomberg-level financial research tools — for free, forever",
+      "similar_company": "a finance faculty at a top Indian MBA college",
+      "specific_result": "access to real-time global market data, a built-in CFA curriculum, and AI-powered portfolio tools at zero cost"
     }
   ]
 }

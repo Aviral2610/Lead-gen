@@ -48,6 +48,110 @@
       ]
     }
   ],
+    {
+      "name": "Fincept — Bloomberg Cost Angle (Asset Managers & Hedge Funds)",
+      "product": "fincept_terminal",
+      "angle": "bloomberg_cost",
+      "emails": [
+        {
+          "step": 1,
+          "delay_days": 0,
+          "subject": "Bloomberg alternative for {{company}}",
+          "body": "{{ai_personalized_first_line}}\n\nYour team is likely spending $24,000+ per seat on Bloomberg. Fincept Terminal gives you the same — real-time data across 150+ markets, portfolio analytics, and GenAI-powered insights — at zero cost.\n\nWould it be worth a 15-minute call to see how it compares to what you're using today?\n\n{{sender_name}}"
+        },
+        {
+          "step": 2,
+          "delay_days": 4,
+          "subject": "Re: Bloomberg alternative for {{company}}",
+          "body": "Quick follow-up — we just launched GenAI-powered hedge fund strategy simulations (Bridgewater macro, Citadel quant, Renaissance momentum) inside the terminal.\n\nThought it might be useful for {{company}} given {{pain_point}}.\n\nHappy to run a live demo — 15 minutes, no pitch deck."
+        },
+        {
+          "step": 3,
+          "delay_days": 8,
+          "subject": "Re: Bloomberg alternative for {{company}}",
+          "body": "Last one from me — if cutting $25,000/seat/year on data costs isn't the right priority right now, no problem at all.\n\nJust reply 'not now' and I'll circle back in a few months.\n\n{{sender_name}}"
+        }
+      ]
+    },
+
+    {
+      "name": "Fincept — AI Differentiation Angle (Quant & Research Teams)",
+      "product": "fincept_terminal",
+      "angle": "ai_differentiation",
+      "emails": [
+        {
+          "step": 1,
+          "delay_days": 0,
+          "subject": "AI-powered research terminal — {{company}}",
+          "body": "{{ai_personalized_first_line}}\n\nBloomberg still doesn't have a built-in AI that models Bridgewater's macro strategy or generates DCF models from natural language. Fincept Terminal does — for free.\n\nIt also integrates supply chain, geopolitics, and maritime data directly into portfolio analysis — something Bloomberg keeps siloed.\n\nWorth a quick look?\n\n{{sender_name}}"
+        },
+        {
+          "step": 2,
+          "delay_days": 4,
+          "subject": "Re: AI-powered research terminal — {{company}}",
+          "body": "In case it's useful — here's what Fincept does that Bloomberg can't:\n\n- 20+ investor personas (Buffett, Dalio, Graham) built in\n- Cross-domain analysis: geopolitics → equity, supply chain → portfolio\n- Local LLM support (run on-prem, no data leaves your servers)\n\nGiven {{pain_point}}, thought {{company}} might find the AI angle particularly relevant.\n\nOpen to a 15-minute demo?"
+        },
+        {
+          "step": 3,
+          "delay_days": 8,
+          "subject": "Re: AI-powered research terminal — {{company}}",
+          "body": "I'll leave it here — if AI-augmented financial research isn't on the roadmap for {{company}} right now, no problem.\n\nFeel free to reach out anytime. The terminal is free, so there's no risk in trying it whenever the time is right.\n\n{{sender_name}}"
+        }
+      ]
+    },
+
+    {
+      "name": "Fincept — Data Engineering Angle (Fintech Startups)",
+      "product": "fincept_terminal",
+      "angle": "data_engineering",
+      "emails": [
+        {
+          "step": 1,
+          "delay_days": 0,
+          "subject": "Financial data pipeline for {{company}}",
+          "body": "{{ai_personalized_first_line}}\n\nIf {{company}} is stitching together Polygon, Quandl, and DBnomics for your data pipeline, Fincept Terminal ships with 100+ pre-built connectors — including Kraken, PostgreSQL, and Kafka — plus a custom API mapper, all in one install.\n\nIt's open-source and free. Worth 15 minutes?\n\n{{sender_name}}"
+        },
+        {
+          "step": 2,
+          "delay_days": 4,
+          "subject": "Re: Financial data pipeline for {{company}}",
+          "body": "One thing that might be relevant for {{company}} — Fincept also has a white-label API on the roadmap, so you can embed the terminal's data layer directly into your product.\n\nGiven {{pain_point}}, thought that might be useful.\n\nHappy to share the GitHub repo and walk through the connector architecture if you're curious."
+        },
+        {
+          "step": 3,
+          "delay_days": 8,
+          "subject": "Re: Financial data pipeline for {{company}}",
+          "body": "Last follow-up — if consolidating your financial data stack isn't the priority right now, no worries.\n\nThe repo is public (github.com/Fincept-Corporation/FinceptTerminal) if you ever want to explore it on your own time.\n\n{{sender_name}}"
+        }
+      ]
+    },
+
+    {
+      "name": "Fincept — Education Angle (Universities & CFA Institutes)",
+      "product": "fincept_terminal",
+      "angle": "education",
+      "emails": [
+        {
+          "step": 1,
+          "delay_days": 0,
+          "subject": "Free Bloomberg alternative for your students",
+          "body": "{{ai_personalized_first_line}}\n\nBloomberg academic licences typically cost institutions $10,000–$30,000/year. Fincept Terminal is a free, open-source alternative that gives students the same — real-time global markets, portfolio tools, and a full CFA Level 1/2/3 curriculum built in Python.\n\nWould a 15-minute call make sense to see if it fits your finance programme?\n\n{{sender_name}}"
+        },
+        {
+          "step": 2,
+          "delay_days": 4,
+          "subject": "Re: Free Bloomberg alternative for your students",
+          "body": "To give you a sense of what's included for finance education:\n\n- Full CFA L1/L2/L3 curriculum in Python\n- Live data: equities, forex, commodities, macro indicators\n- DCF models, VaR, Sharpe ratio tools built in\n- Runs on any student laptop (4GB RAM, Windows/Mac/Linux)\n- Zero cost — no academic licence required\n\nThought it could save {{company}} significant budget while giving students real-world tools.\n\nHappy to set up a faculty demo."
+        },
+        {
+          "step": 3,
+          "delay_days": 8,
+          "subject": "Re: Free Bloomberg alternative for your students",
+          "body": "I'll leave it here — if upgrading your finance lab tools isn't a priority this semester, no problem.\n\nFeel free to reach out whenever the timing is right. The terminal is completely free to deploy, so there's no procurement process needed.\n\n{{sender_name}}"
+        }
+      ]
+    },
+
   "best_practices": {
     "sending_time": "Tuesday-Thursday, 10 AM local time yields 40% higher response rates",
     "links": "ZERO links in email #1 — add in follow-ups only",
